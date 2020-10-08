@@ -6,9 +6,30 @@
 	window_y = 106
 	proper_name = "Cyborg"
 
-/datum/wires/robot/New(atom/_holder)
-	wires = list(WIRE_AI_CONTROL, WIRE_BORG_CAMERA, WIRE_BORG_LAWCHECK, WIRE_BORG_LOCKED)
-	return ..()
+// /vg/ ordering
+
+#define BORG_WIRE_MAIN_POWER 1 // The power wires do nothing whyyyyyyyyyyyyy
+#define BORG_WIRE_LOCKED_DOWN 2
+#define BORG_WIRE_CAMERA 4
+#define BORG_WIRE_AI_CONTROL 8  // Not used on MoMMIs
+#define BORG_WIRE_LAWCHECK 16 // Not used on MoMMIs
+
+/datum/wires/robot/GetWireName(index)
+	switch(index)
+		if(BORG_WIRE_MAIN_POWER)
+			return "Main Power"
+
+		if(BORG_WIRE_LOCKED_DOWN)
+			return "Lockdown"
+
+		if(BORG_WIRE_CAMERA)
+			return "Camera"
+
+		if(BORG_WIRE_AI_CONTROL)
+			return "AI Control"
+
+		if(BORG_WIRE_LAWCHECK)
+			return "Law Check"
 
 /datum/wires/robot/get_status()
 	. = ..()
@@ -20,10 +41,13 @@
 
 /datum/wires/robot/on_cut(wire, mend)
 	var/mob/living/silicon/robot/R = holder
-	switch(wire)
-		if(WIRE_BORG_LAWCHECK) //Cut the law wire, and the borg will no longer receive law updates from its AI
-			if(!mend)
-				if(R.lawupdate)
+	switch(index)
+		if(BORG_WIRE_LAWCHECK) //Cut the law wire, and the borg will no longer receive law updates from its AI
+			if(!mended)
+				if(!R.deployed) //AI shells must always have the same laws as the AI
+					R.lawupdate = FALSE
+
+				if(R.lawupdate == 1)
 					to_chat(R, "LawSync protocol engaged.")
 					R.lawsync()
 					R.show_laws()
@@ -34,7 +58,10 @@
 		if(WIRE_AI_CONTROL) //Cut the AI wire to reset AI control
 			if(!mend)
 				if(R.connected_ai)
-					R.disconnect_from_ai()
+					R.notify_ai(DISCONNECT)
+					if(R.shell)
+						R.undeploy() //Forced disconnect of an AI should this body be a shell.
+					R.connected_ai = null
 
 		if(WIRE_BORG_CAMERA)
 			if(!isnull(R.camera) && !R.scrambledcodes)
@@ -51,7 +78,16 @@
 	switch(wire)
 		if(WIRE_AI_CONTROL) //pulse the AI wire to make the borg reselect an AI
 			if(!R.emagged)
-				R.connect_to_ai(select_active_ai())
+				var/new_ai
+				new_ai = select_active_ai(R)
+				R.notify_ai(DISCONNECT)
+				if(new_ai && (new_ai != R.connected_ai))
+					R.connected_ai = new_ai
+					if(R.shell)
+						R.undeploy() //If this borg is an AI shell, disconnect the controlling AI and assign ti to a new AI
+						R.notify_ai(AI_SHELL)
+				else
+					R.notify_ai(NEW_BORG)
 
 		if(WIRE_BORG_CAMERA)
 			if(!isnull(R.camera) && R.camera.can_use() && !R.scrambledcodes)

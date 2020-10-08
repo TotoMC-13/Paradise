@@ -271,6 +271,16 @@
 		if(H.bodytemperature < BODYTEMP_COLD_DAMAGE_LIMIT)
 			. += (BODYTEMP_COLD_DAMAGE_LIMIT - H.bodytemperature) / COLD_SLOWDOWN_FACTOR
 
+		if(H.status_flags & GOTTAGOFAST)
+			. -= 1
+		if(H.status_flags & GOTTAGOFAST_METH)
+			. -= 1
+
+		if(H.pulling)
+			if(isobj(H.pulling))
+				var/obj/structure/S = H.pulling
+				if(S.drag_slowdown)
+					. = S.drag_slowdown
 	return .
 
 #undef ADD_SLOWDOWN
@@ -372,13 +382,13 @@
 	return
 
 /datum/species/proc/help(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/martial_art/attacker_style)
-	if(attacker_style && attacker_style.help_act(user, target) == TRUE)//adminfu only...
+	if(user.zone_selected == "mouth")
+		user.do_cpr(target)
+	if(attacker_style && attacker_style.help_act(user, target))//adminfu only...
 		return TRUE
-	if(target.health >= HEALTH_THRESHOLD_CRIT && !(target.status_flags & FAKEDEATH))
+	if(!(target.status_flags & FAKEDEATH))
 		target.help_shake_act(user)
 		return TRUE
-	else
-		user.do_cpr(target)
 
 /datum/species/proc/grab(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/martial_art/attacker_style)
 	if(target.check_block())

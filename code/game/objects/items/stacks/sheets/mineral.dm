@@ -313,7 +313,8 @@ GLOBAL_LIST_INIT(sandbag_recipes, list ( \
 GLOBAL_LIST_INIT(titanium_recipes, list(
 	new/datum/stack_recipe("titanium tile", /obj/item/stack/tile/mineral/titanium, 1, 4, 20),
 	new/datum/stack_recipe("surgical tray", /obj/structure/table/tray, 2, one_per_turf = 1, on_floor = 1),
-	))
+	new/datum/stack_recipe("surgery cart", /obj/structure/surgicalcart, 5, one_per_turf = 1, on_floor = 1) //Nuestra tabla de cirugias. Si alguien lee esto que recuerde que odio los conflictos.
+	)
 
 /obj/item/stack/sheet/mineral/titanium/New(loc, amount=null)
 	recipes = GLOB.titanium_recipes

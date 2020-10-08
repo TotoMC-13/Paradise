@@ -111,8 +111,50 @@
 	if(stat & (NOPOWER|BROKEN) || !anchored)
 		return
 
-	using_power = try_recharging_if_possible()
-	update_icon()
+	using_power = FALSE
+	if(charging)
+		if(istype(charging, /obj/item/gun/energy))
+			var/obj/item/gun/energy/E = charging
+			if(E.cell.charge < E.cell.maxcharge)
+				var/transfered = E.cell.give(E.cell.chargerate * recharge_coeff)
+				E.on_recharge()
+				use_power(transfered * 10)
+				using_power = TRUE
+
+		if(istype(charging, /obj/item/melee/baton))
+			var/obj/item/melee/baton/B = charging
+			if(B.cell)
+				var/transfered = B.cell.give(B.cell.chargerate)
+				if(transfered)
+					use_power(transfered * 13)
+					using_power = TRUE
+
+		if(istype(charging, /obj/item/modular_computer))
+			var/obj/item/modular_computer/C = charging
+			var/obj/item/computer_hardware/battery/battery_module = C.all_components[MC_CELL]
+			if(battery_module)
+				var/obj/item/computer_hardware/battery/B = battery_module
+				if(B.battery)
+					if(B.battery.charge < B.battery.maxcharge)
+						B.battery.give(B.battery.chargerate)
+						use_power(200)
+						using_power = TRUE
+
+		if(istype(charging, /obj/item/rcs))
+			var/obj/item/rcs/R = charging
+			if(R.rcell)
+				if(R.rcell.give(R.rcell.chargerate))
+					use_power(200)
+					using_power = TRUE
+
+		if(istype(charging, /obj/item/bodyanalyzer))
+			var/obj/item/bodyanalyzer/B = charging
+			if(B.cell)
+				if(B.cell.give(B.cell.chargerate))
+					use_power(200)
+					using_power = TRUE
+
+	update_icon(using_power)
 
 /obj/machinery/recharger/emp_act(severity)
 	if(stat & (NOPOWER|BROKEN) || !anchored)
